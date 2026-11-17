@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#05060f">
+<title>Arena Online</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; color: #cfd6e6; font-family: system-ui, 'Segoe UI', sans-serif; }
+  body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 0;
+         background: radial-gradient(1100px 700px at 12% 20%, rgba(37,99,235,.28), transparent 60%),
+                     radial-gradient(1100px 700px at 88% 80%, rgba(220,38,38,.24), transparent 60%), #05060f; }
+  #area { position: relative; width: min(100vw, 1200px, calc((100vh - 165px) * 1.6667)); container-type: inline-size;
+          border-radius: 14px; overflow: hidden;
+          box-shadow: 0 0 0 1px #2a3160, 0 0 70px rgba(59,130,246,.22), 0 0 70px rgba(239,68,68,.16); }
+  canvas { width: 100%; height: auto; display: block; background: #0a0d24; }
+
+  /* Telas por cima do jogo (início, pausa, fim). Tudo em "em" para acompanhar o tamanho do canvas */
+  .ov { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
+        text-align: center; padding: 0 5%; font-size: 16px; font-size: clamp(7px, 1.34cqw, 16px); background: rgba(5,6,20,.74); }
+  #inicio { display: flex; background: rgba(5,6,20,.62); backdrop-filter: blur(1.5px); -webkit-backdrop-filter: blur(1.5px); }
+  #fim { background: rgba(5,6,20,.7); }
+
+  .logo { margin: 0; font-size: 5.6em; font-weight: 900; font-style: italic; letter-spacing: .04em; line-height: 1;
+          background: linear-gradient(90deg, #60a5fa, #fff 50%, #f87171); -webkit-background-clip: text; background-clip: text; color: transparent;
+          animation: brilho 2.4s ease-in-out infinite alternate; }
+  @keyframes brilho { from { filter: drop-shadow(0 0 .12em rgba(59,130,246,.75)); } to { filter: drop-shadow(0 0 .4em rgba(239,68,68,.75)); } }
+  .sub { margin: .45em 0 1.3em; letter-spacing: .55em; font-weight: 700; font-size: 1.05em; color: #aeb6cc; text-transform: uppercase; }
+  /* cartões de escolha do modo de jogo */
+  .modos { display: flex; gap: .6em; justify-content: center; margin-bottom: 1.2em; }
+  .modo { position: relative; width: 8.9em; padding: .7em .6em .8em; border-radius: 1em; cursor: pointer; color: inherit; font: inherit; font-size: 1em;
+          background: rgba(255,255,255,.05); border: 2px solid rgba(255,255,255,.14); transition: transform .15s, border-color .15s, box-shadow .15s; }
+  .modo:hover { border-color: #8ea0ff; }
+  .modo.sel { border-color: #ffd84d; background: rgba(255,216,77,.10); box-shadow: 0 0 1.6em rgba(255,216,77,.35); transform: scale(1.04); }
+  .modo .ic { font-size: 1.8em; line-height: 1.1; }
+  .modo b { display: block; color: #fff; font-size: 1em; margin: .15em 0; }
+  .modo small { display: none; } /* a descrição de cada modo aparece embaixo, em #modoDesc, só a do selecionado */
+  #modoDesc { max-width: 50em; min-height: 2.7em; margin: -.3em 0 .9em; font-size: .95em; line-height: 1.4; color: #c5cde3; }
+  .modo kbd { position: absolute; top: .7em; right: .7em; }
+  .modo .tag { display: none; position: absolute; top: .8em; left: .8em; font: 800 .7em system-ui, sans-serif; letter-spacing: .1em; color: #ffd84d; }
+  .modo.sel .tag { display: block; }
+  /* tutorial de 3 passos do modo escolhido */
+  .passos { display: flex; gap: .8em; margin-bottom: .9em; }
+  .passo { width: 15.5em; padding: .6em .7em; border-radius: .8em; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); }
+  .passo .ic { font-size: 1.7em; line-height: 1.1; }
+  .passo b { display: block; color: #fff; font-size: 1em; margin: .2em 0; }
+  .passo small { display: block; font-size: .82em; color: #aeb6cc; line-height: 1.3; }
+  /* ranking da tela de vitória (Corrida do Ouro) */
+  .rank { font-size: .58em; display: grid; gap: .3em; width: 26em; margin: .3em auto .7em; text-align: left; }
+  .rl { display: grid; grid-template-columns: 2.4em 1.4em 1fr 4.2em 5.4em; align-items: center; padding: .3em .8em; border-radius: .5em; background: rgba(255,255,255,.07); }
+  .rl:first-child { background: rgba(255,216,77,.18); outline: 1px solid #ffd84d; }
+  .rl .dot { width: .8em; height: .8em; border-radius: 50%; }
+  .rl span:nth-child(4), .rl span:nth-child(5) { text-align: right; color: #fff; }
+  .rl span:nth-child(5) { color: #aeb6cc; font-weight: 600; }
+  .ctrl { display: flex; gap: 2.4em; margin-bottom: 1em; align-items: center; font-weight: 700; }
+  kbd { display: inline-block; min-width: 1.9em; padding: .22em .45em; border-radius: .4em; background: #1a1f3d; border: 1px solid #3a4380;
+        border-bottom-width: 3px; color: #fff; font: 700 .85em system-ui, sans-serif; text-align: center; }
+  .chips { display: flex; gap: .6em; flex-wrap: wrap; justify-content: center; margin-bottom: 1.3em; }
+  .chip { font: 600 .95em system-ui, sans-serif; color: #c5cde3; background: #141833; border: 1px solid #3a4380; border-radius: 99em;
+          padding: .5em 1em; cursor: pointer; }
+  .chip:hover { border-color: #8ea0ff; background: #1c2250; }
+  .chip b { color: #fff; }
+  .btn { font: 900 1.5em system-ui, sans-serif; letter-spacing: .08em; color: #fff; border: 0; border-radius: .6em; padding: .55em 2.2em; cursor: pointer;
+         background: linear-gradient(90deg, #2563eb, #7c3aed 50%, #dc2626); box-shadow: 0 0 1.4em rgba(124,58,237,.55);
+         animation: pulsar 1.1s ease-in-out infinite alternate; }
+  .btn small { display: block; font: 600 .5em system-ui, sans-serif; letter-spacing: .12em; opacity: .85; margin-top: .2em; }
+  @keyframes pulsar { to { transform: scale(1.06); box-shadow: 0 0 2.3em rgba(124,58,237,.9); } }
+
+  #pausa h2 { font-size: 3.6em; font-weight: 900; font-style: italic; margin: 0 0 .2em; color: #fff; letter-spacing: .06em; }
+  #fimTexto { font-size: 4em; font-weight: 900; font-style: italic; margin: 0 0 .15em; letter-spacing: .03em; text-transform: uppercase; }
+  #fimPlacar { font-size: 1.9em; font-weight: 800; margin-bottom: .4em; }
+  #fimStats { font-size: 1.05em; color: #c5cde3; margin-bottom: 1.4em; line-height: 1.6; }
+  #fimStats b { color: #fff; }
+
+  #ajuda { max-width: 1200px; font-size: 12.5px; margin-top: 10px; text-align: center; opacity: .85; padding: 0 12px; line-height: 2; }
+  #ajuda span { white-space: nowrap; margin: 0 6px; }
+  #jogadores { font-size: 12.5px; margin-top: 6px; text-align: center; padding: 0 12px; }
+  .jg { display: inline-block; margin: 2px 3px; padding: 2px 10px; border-radius: 99px; border: 1px solid; font-weight: 600; }
+
+  /* ---------- Celular / tablet (a classe "toque" é colocada no <html> pelo script) ---------- */
+  #botoesToque, #girar { display: none; }
+  html.toque, html.toque body { overflow: hidden; overscroll-behavior: none; touch-action: none;
+          -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+  html.toque body { padding: 0; min-height: 100vh; min-height: 100dvh; }
+  /* o jogo ocupa a tela toda (sem as linhas de ajuda do teclado embaixo) */
+  html.toque #area { width: min(100vw, calc(100vh * 1.6667)); width: min(100vw, calc(100dvh * 1.6667)); border-radius: 0; }
+  html.toque #ajuda, html.toque #jogadores, html.toque kbd, html.toque .btn small, html.toque .passos { display: none; }
+  html.toque .ov { font-size: clamp(7px, 1.6cqw, 16px); } /* sem o tutorial sobra espaço: letras maiores */
+  html.toque .modos { gap: .5em; }
+  html.toque .modo { width: 7.2em; padding: .6em .4em .7em; }  /* sete cartões numa linha só, mesmo com a letra maior do celular */
+  html.toque .modo b { font-size: .85em; }
+  html.toque .modo .ic { font-size: 1.5em; }
+  /* botões de pausa e menu (só durante a partida) */
+  html.toque body.jogando #botoesToque { display: flex; flex-direction: column; gap: 8px; position: fixed; z-index: 5;
+          top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); }
+  #botoesToque button { width: 44px; height: 44px; padding: 0; border-radius: 12px; border: 1px solid #3a4380;
+          background: rgba(20,24,51,.8); color: #fff; font-size: 20px; line-height: 1; }
+  /* aviso para virar o aparelho: o jogo é sempre deitado */
+  #girar { position: fixed; inset: 0; z-index: 10; background: #05060f; flex-direction: column; align-items: center; justify-content: center;
+           gap: 14px; padding: 24px; text-align: center; font-size: 20px; font-weight: 700; color: #fff; }
+  #girar .ic { font-size: 64px; animation: girar 1.6s ease-in-out infinite alternate; }
+  #girar small { font-size: 14px; font-weight: 600; color: #aeb6cc; }
+  @keyframes girar { from { transform: rotate(0); } to { transform: rotate(-90deg); } }
+  @media (orientation: portrait) { html.toque #girar { display: flex; } }
+  /* ---------- Antessala online ---------- */
+  #lobby { display: flex; background: rgba(5,6,20,.78); backdrop-filter: blur(1.5px); -webkit-backdrop-filter: blur(1.5px); }
+  .campo { font: 700 1.5em system-ui, sans-serif; text-align: center; width: 12em; padding: .5em .7em; border-radius: .6em; color: #fff;
+           background: #141833; border: 2px solid #3a4380; outline: none; margin-bottom: 1em; }
+  .campo:focus { border-color: #8ea0ff; }
+  .times { display: flex; gap: 1.6em; margin: .6em 0 1.1em; }
+  .coluna { width: 17em; padding: .8em; border-radius: 1em; background: rgba(255,255,255,.05); border: 2px solid; min-height: 12em; }
+  .coluna h3 { margin: 0 0 .5em; font-size: 1.5em; font-style: italic; letter-spacing: .05em; }
+  .coluna .jog { padding: .35em .6em; margin: .25em 0; border-radius: .5em; background: rgba(255,255,255,.08); font-weight: 700; text-align: left; color: #fff; }
+  .coluna .jog.eu { outline: 2px solid #ffd84d; }
+  .coluna .vaga { padding: .35em .6em; margin: .25em 0; border-radius: .5em; border: 1px dashed rgba(255,255,255,.2); color: #7c849f; font-size: .85em; text-align: left; }
+  .coluna .trocar { margin-top: .6em; }
+  #lobMsg { min-height: 1.4em; margin: .2em 0 .8em; color: #c5cde3; font-weight: 600; }
+  #lobErro { color: #ff8a8a; min-height: 1.3em; margin-bottom: .6em; font-weight: 700; }
+  #fim .btn { display: none; }
+  .sala-topo { margin-bottom: .4em; font-weight: 700; color: #aeb6cc; }
+  .sala-topo b { color: #ffd84d; font-size: 1.3em; letter-spacing: .15em; margin-right: .4em; }
+  .sala-topo .chip { margin-left: .4em; padding: .25em .8em; }
+  #conexao { position: fixed; top: 8px; left: 10px; z-index: 20; font: 700 13px system-ui, sans-serif; color: #ffd84d; text-shadow: 0 0 6px #000; }
+  #emotes { visibility: hidden; display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
+  #emotes button { min-width: 52px; height: 40px; border-radius: 12px; border: 1px solid #3a4380; background: rgba(20,24,51,.85); color: #fff;
+                   font: 800 18px system-ui, sans-serif; cursor: pointer; }
+  #emotes button:hover { border-color: #8ea0ff; background: #1c2250; }
+  html.toque #emotes { position: fixed; z-index: 6; left: max(8px, env(safe-area-inset-left)); bottom: 8px; margin: 0; flex-direction: column; }
+  #listaSalas { width: 30em; max-height: 8.5em; overflow-y: auto; display: grid; gap: .25em; }
+  .linha-sala { display: grid; grid-template-columns: 4em 3em 4.5em 1fr auto; align-items: center; gap: .5em; padding: .25em .7em; border-radius: .5em;
+                background: rgba(255,255,255,.07); font-size: .9em; text-align: left; }
+  .linha-sala b { color: #ffd84d; letter-spacing: .1em; }
+  .linha-sala .chip { padding: .2em .8em; }

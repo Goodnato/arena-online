@@ -1,0 +1,11 @@
+{
+  "name": "arena-online",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Arena de Objetivos: jogo em grade, 7 modos, online com salas.",
+  "scripts": {
+    "build": "npm install --prefix servidor && node servidor/montar.js",
+    "start": "node servidor/servidor.js"
+  },
+  "engines": { "node": ">=18" }
+}

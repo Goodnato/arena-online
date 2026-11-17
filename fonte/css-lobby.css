@@ -1,0 +1,70 @@
+  /* ---------- Antessala com todos os modos ---------- */
+  #lobby.sala .logo, #lobby.sala .sub { display: none; }
+  #lobby.sala { justify-content: flex-start; padding-top: 1.1em; }
+  #lobby .modos { gap: .45em; margin-bottom: .5em; }
+  #lobby .modo { width: 7.4em; padding: .4em .3em .5em; }
+  #lobby .modo .ic { font-size: 1.5em; }
+  #lobby .modo b { font-size: .8em; }
+  #lobby .modo[disabled] { cursor: default; opacity: .85; }
+  #lobby .modo[disabled]:not(.sel) { opacity: .5; }
+  #lobby #modoDesc { min-height: 2.2em; margin: 0 0 .5em; font-size: .85em; }
+  #lobby .passos { margin-bottom: .6em; gap: .6em; }
+  #lobby .passo { width: 15em; padding: .4em .6em; }
+  #lobby .passo .ic { font-size: 1.3em; }
+  #lobby .times { margin: .2em 0 .5em; }
+  #lobby .coluna { min-height: 0; padding: .5em .7em; }
+  #lobby .coluna h3 { font-size: 1.15em; margin-bottom: .3em; }
+  #lobby .coluna .jog, #lobby .coluna .vaga { padding: .25em .6em; margin: .2em 0; }
+  .grade6 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 .6em; }
+  #lobby .chips { margin-bottom: .6em; }
+  #lobby .btn { font-size: 1.25em; }
+  html.toque #lobby .passos { display: flex; }
+  html.toque #lobby .passo small { display: none; }
+  /* celular: antessala mais compacta e rolável */
+  #lobby { overflow-y: auto; touch-action: pan-y; }
+  html.toque #lobby #modoDesc { display: none; }
+  html.toque #lobby .modos { margin-bottom: .4em; }
+  html.toque #lobby .passos { margin-bottom: .4em; }
+  html.toque #lobby .passo { padding: .2em .5em; }
+  html.toque #lobby .coluna .jog, html.toque #lobby .coluna .vaga { padding: .12em .5em; margin: .12em 0; }
+  html.toque #lobby .times { margin: .1em 0 .3em; }
+  html.toque #lobby #lobMsg { margin: 0 0 .3em; font-size: .85em; }
+  html.toque #lobby .chips { margin-bottom: .3em; }
+  /* alinhamento: cartões, passos e equipes com a mesma largura, colunas iguais e centralizadas */
+  #lobby.sala #lobConteudo { width: min(57em, 94%); display: flex; flex-direction: column; align-items: center; }
+  #lobby.sala .sala-topo { text-align: center; }
+  #lobby.sala .modos, #lobby.sala .passos, #lobby.sala .times { width: 100%; }
+  #lobby.sala .modo, #lobby.sala .passo, #lobby.sala .coluna { flex: 1 1 0; min-width: 0; width: auto; }
+  #lobby.sala .modos { gap: .45em; }
+  #lobby.sala .passos { gap: .45em; }
+  #lobby.sala .times { gap: .45em; justify-content: stretch; }
+  #lobby.sala .passo { display: flex; flex-direction: column; align-items: center; }
+  #lobby.sala #modoDesc { max-width: 100%; }
+  #lobby.sala .chips { justify-content: center; }
+  #emotes .sair { margin-left: 14px; padding: 0 14px; font-size: 14px; border-color: #7a2a3a; color: #ff9a9a; }
+  #emotes .sair:hover { border-color: #ff6b6b; background: #3a1420; }
+</style>
+</head>
+<body>
+<div id="area">
+  <canvas id="tela" width="1200" height="720"></canvas>
+  <div id="fim" class="ov">
+    <h2 id="fimTexto"></h2>
+    <div id="fimPlacar"></div>
+    <div id="fimStats"></div>
+    <div id="fimVolta" style="color:#aeb6cc">Voltando para a sala…</div>
+    <button class="chip" id="fimSair" style="margin-top:1em">Sair da sala</button>
+  </div>
+  <div id="lobby" class="ov">
+    <h1 class="logo">ARENA</h1>
+    <div class="sub">online</div>
+    <div id="lobConteudo"></div>
+  </div>
+</div>
+<div id="emotes"><button data-e="0" aria-label="Joinha">👍</button><button data-e="1" aria-label="Risada">😂</button><button data-e="2" aria-label="Bravo">😡</button><button data-e="3" aria-label="GG">GG</button><button id="abandonarBtn" class="sair" aria-label="Abandonar a partida">Abandonar</button></div>
+<div id="conexao"></div>
+<div id="ajuda"><span>Mova com <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> ou <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>No celular: deslize o dedo</span><span><kbd>1</kbd>–<kbd>4</kbd> emotes</span><span><kbd>V</kbd> som</span></div>
+<!-- elementos que o código do jogo.html espera encontrar (não aparecem) -->
+<div style="display:none"><div id="pausa"></div><div id="jogadores"></div><div id="optNivel"></div><div id="optSom"></div><div id="optMusica"></div><div id="inicio"></div></div>
+<script>
+/*@@JOGO@@*/
