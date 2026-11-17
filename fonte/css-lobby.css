@@ -41,6 +41,7 @@
   #lobby.sala .passo { display: flex; flex-direction: column; align-items: center; }
   #lobby.sala #modoDesc { max-width: 100%; }
   #lobby.sala .chips { justify-content: center; }
+  #ping { position: fixed; top: 6px; right: 10px; z-index: 20; font: 600 11px system-ui, sans-serif; opacity: .75; text-shadow: 0 0 4px #000; }
   #emotes .sair { margin-left: 14px; padding: 0 14px; font-size: 14px; border-color: #7a2a3a; color: #ff9a9a; }
   #emotes .sair:hover { border-color: #ff6b6b; background: #3a1420; }
 </style>
@@ -63,6 +64,7 @@
 </div>
 <div id="emotes"><button data-e="0" aria-label="Joinha">👍</button><button data-e="1" aria-label="Risada">😂</button><button data-e="2" aria-label="Bravo">😡</button><button data-e="3" aria-label="GG">GG</button><button id="abandonarBtn" class="sair" aria-label="Abandonar a partida">Abandonar</button></div>
 <div id="conexao"></div>
+<div id="ping"></div>
 <div id="ajuda"><span>Mova com <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> ou <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>No celular: deslize o dedo</span><span><kbd>1</kbd>–<kbd>4</kbd> emotes</span><span><kbd>V</kbd> som</span></div>
 <!-- elementos que o código do jogo.html espera encontrar (não aparecem) -->
 <div style="display:none"><div id="pausa"></div><div id="jogadores"></div><div id="optNivel"></div><div id="optSom"></div><div id="optMusica"></div><div id="inicio"></div></div>

@@ -184,6 +184,7 @@ wss.on('connection', ws => {
     let m; try { m = JSON.parse(bruto); } catch { return; }
     if (!m || typeof m.t !== 'string') return;
 
+    if (m.t === 'ping') return enviar(ws, { t: 'pong', c: m.c });   // medição de atraso (mostrada no canto da tela)
     if (m.t === 'entrar') {
       if (c.nomePedido !== null) return;
       c.nomePedido = m.nome;

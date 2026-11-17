@@ -47,6 +47,30 @@ function revive(v) {
   }
   return v;
 }
+/* ---------- Previsão de movimento (esconde o atraso da internet) ----------
+   Ao apertar uma direção, o seu boneco já começa a deslizar para o quadrado de destino, sem esperar o servidor.
+   O servidor continua sendo o juiz: se ele confirmar, nada muda; se discordar (parede, cooldown, eliminação),
+   o boneco volta para onde o servidor diz. Só o primeiro passo é previsto; os seguintes vêm dos snapshots. */
+let pred = null;                      // { x, y, t } passo previsto aguardando confirmação
+function predizer(dir) {
+  const p = estado && euNum !== null ? estado.jogadores[euNum - 1] : null;
+  if (!p || pred || p.morto > 0 || estado.contagem > 0 || estado.vencedor) return;
+  const agora = performance.now();
+  if (agora - (p.ultimoPasso || 0) < delayDe(p) - 40) return;       // ainda em espera entre passos: o servidor guarda a tecla
+  const nx = p.x + dir[0], ny = p.y + dir[1];
+  p.dir = dir;
+  if (!terrenoLivre(p.time, nx, ny)) return;
+  pred = { x: nx, y: ny, t: agora }; p.ultimoPasso = agora; p.pulo = .18;
+}
+function conferirPrevisao(p, salto) {
+  const agora = performance.now();
+  if (pred) {
+    if (p.x === pred.x && p.y === pred.y) { pred = null; return; }   // o servidor confirmou
+    if (salto > 0 || p.morto > 0 || agora - pred.t > 700) pred = null; // discordou ou demorou demais: vale o servidor
+  }
+  if (salto > 0 && !pred) p.ultimoPasso = agora;
+}
+
 function aplicarSnap(s) {
   const e = estado; if (!e || euNum === null) return;
   if (s.m) { MAPA = s.m; LINHAS = MAPA.length; COLUNAS = MAPA[0].length; }
@@ -61,6 +85,7 @@ function aplicarSnap(s) {
     if (p.pri) { p.rx = p.x; p.ry = p.y; p.pri = false; p.rastro = []; }
     else if (salto > 1) { p.rx = p.x; p.ry = p.y; p.rastro = []; p.nasce = .35; }
     else if (salto === 1) p.pulo = .18;
+    if (p.num === euNum) conferirPrevisao(p, salto);
   }
   for (const k in s.e) e[k] = revive(s.e[k]);
   const n = Math.ceil(Math.max(0, e.contagem));
@@ -142,6 +167,10 @@ function conectar(nome) {
     }
     else if (m.t === 'erro') { const el = $('lobErro'); if (el) el.textContent = m.msg; }
     else if (m.t === 'lista') mostrarLista(m.salas);
+    else if (m.t === 'pong') {
+      const rtt = Date.now() - m.c, el = $('ping');
+      el.textContent = `ping ${rtt} ms`; el.style.color = rtt < 80 ? '#7ee787' : rtt < 160 ? '#ffd84d' : '#ff8a8a';
+    }
     else if (m.t === 'emote') { if (m.n) { (estado.emotes = estado.emotes || []).push({ num: m.n, txt: EMOTES[m.e], t: 2.2 }); } }
     else if (m.t === 'aviso') { mostrarAviso(m.texto); avisoLobby = { texto: m.texto, ate: Date.now() + 5000 }; if (sala && $('lobMsg') && $('lobby').style.display !== 'none') mostrarSala(); }
     else if (m.t === 'afk') mostrarAviso('Você ficou parado e virou bot. Mexa-se para voltar!');
@@ -152,7 +181,7 @@ function conectar(nome) {
       pararLista();
       nivel = Math.max(0, NIVEL_ID.indexOf(m.nivel)); if (m.placar) placar = m.placar;
       prepararLocal(m.modo, m.slots); modoPreview = m.modo; euNum = m.voce;
-      segOn.length = 0; $('fim').style.display = 'none'; $('lobby').style.display = 'none';
+      segOn.length = 0; pred = null; $('fim').style.display = 'none'; $('lobby').style.display = 'none';
     } else if (m.t === 'sala') {
       pararLista(); sala = m; nivel = Math.max(0, NIVEL_ID.indexOf(m.nivel));
       if (!m.emJogo && (euNum !== null || modoPreview !== m.modo)) voltarAoPreview(m.modo);
@@ -280,6 +309,7 @@ window.addEventListener('keydown', e => {
   if (e.repeat || !emPartida()) return;
   segOn.push(e.code);
   enviar({ t: 'dir', d: dir });
+  predizer(dir);
 });
 window.addEventListener('keyup', e => {
   const i = segOn.indexOf(e.code); if (i < 0) return;
@@ -303,7 +333,7 @@ window.addEventListener('touchmove', e => {
   const dir = Math.abs(dx) > Math.abs(dy) ? [dx > 0 ? 1 : -1, 0] : [0, dy > 0 ? 1 : -1];
   dedoOn.x = t.clientX; dedoOn.y = t.clientY;
   if (dedoOn.ult && dedoOn.ult[0] === dir[0] && dedoOn.ult[1] === dir[1]) return;
-  dedoOn.ult = dir; enviar({ t: 'dir', d: dir });
+  dedoOn.ult = dir; enviar({ t: 'dir', d: dir }); predizer(dir);
 }, { passive: false });
 function soltarDedoOn(e) {
   if (!dedoOn || ![...e.changedTouches].some(t => t.identifier === dedoOn.id)) return;
@@ -345,7 +375,11 @@ $('emotes').querySelectorAll('button[data-e]').forEach(b => b.onclick = () => { 
 let emotesVisiveis = false;
 function atualizarOn(dt) {
   if (estado.vai > 0) estado.vai -= dt;
-  atualizarEfeitos(dt);
+  // com um passo previsto, o seu boneco desliza para o destino previsto em vez do último que o servidor mandou
+  const eu = pred && euNum !== null ? estado.jogadores[euNum - 1] : null;
+  if (eu) { const sx = eu.x, sy = eu.y; eu.x = pred.x; eu.y = pred.y; atualizarEfeitos(dt); eu.x = sx; eu.y = sy; }
+  else atualizarEfeitos(dt);
+  if (pred && performance.now() - pred.t > 700) pred = null;
   if (estado.emotes) { for (const e of estado.emotes) e.t -= dt; estado.emotes = estado.emotes.filter(e => e.t > 0); }
   const ver = !!emPartida();
   if (ver !== emotesVisiveis) { emotesVisiveis = ver; $('emotes').style.visibility = ver ? 'visible' : 'hidden'; }
@@ -357,6 +391,7 @@ function loop(agora) {
   atualizarOn(dt); desenhar();
   requestAnimationFrame(loop);
 }
+setInterval(() => enviar({ t: 'ping', c: Date.now() }), 2500);
 prepararLocal('times');
 mostrarEntrada();
 requestAnimationFrame(loop);
